@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, touch-action: manipulation">
+  <title>道轨异仙 · 人生体验轮盘</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #f3efe6; min-height: 100vh; display: flex;
+      justify-content: center; align-items: center;
+      font-family: 'KaiTi', '楷体', '华文楷体', 'Microsoft YaHei', serif;
+      color: #2c2c2c; padding: 20px; position: relative;
+    }
+    #homePage { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #homePage h1 {
+      font-size: 3.2rem; letter-spacing: 8px; color: #2c2c2c;
+      margin-bottom: 15px; line-height: 1.3;
+    }
+    #homePage .subtitle {
+      font-size: 1.1rem; color: #8b3a3a; margin-bottom: 40px;
+    }
+    #startBtn {
+      background: #2c2c2c; border: 2px solid #8b7355; color: #f3efe6;
+      font-size: 1.6rem; padding: 15px 50px; border-radius: 50px;
+      letter-spacing: 6px; font-family: inherit; cursor: pointer;
+      transition: all 0.3s;
+    }
+    #startBtn:hover { background: #8b3a3a; border-color: #5c2525; }
+    #gamePage { display: none; width: 100%; max-width: 500px; }
+
+    /* 左下角旋转按钮 */
+    .spin-trigger-float {
+      position: fixed; bottom: 25px; left: 25px; width: 50px; height: 50px;
+      background: #2c2c2c; border: 2px solid #8b7355; border-radius: 50%;
+      font-size: 24px; display: flex; align-items: center; justify-content: center;
+      color: #f3efe6; cursor: pointer; z-index: 100; user-select: none;
+      transition: all 0.3s;
+    }
+    .spin-trigger-float:hover { background: #8b3a3a; border-color: #5c2525; }
+    .spin-trigger-float:disabled { opacity: 0.5; pointer-events: none; }
+
+    .back-arrow {
+      position: fixed; top: 20px; left: 20px; width: 44px; height: 44px;
+      background: #2c2c2c; border: 2px solid #8b7355; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; color: #f3efe6; font-size: 24px; font-weight: bold;
+      z-index: 100;
+    }
+    .back-arrow:hover { background: #8b3a3a; border-color: #5c2525; }
+
+    .restart-float {
+      position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px;
+      background: #2c2c2c; border: 2px solid #8b7355; border-radius: 50%;
+      font-size: 24px; display: flex; align-items: center; justify-content: center;
+      color: #f3efe6; cursor: pointer; z-index: 100;
+    }
+    .restart-float:hover { background: #8b3a3a; border-color: #5c2525; }
+
+    #app {
+      background: rgba(243,239,230,0.9); backdrop-filter: blur(10px);
+      border: 2px solid #c4b8a0; border-radius: 32px;
+      padding: 30px 20px 20px; width: 100%; text-align: center;
+      box-shadow: 0 0 20px rgba(139,115,85,0.2);
+    }
+    h1.game-title {
+      font-size: 2.2rem; letter-spacing: 6px; color: #2c2c2c;
+      margin-bottom: 10px;
+    }
+    #wheelContainer { position: relative; display: inline-block; margin: 10px auto 0; }
+    canvas {
+      display: block; width: 100%; max-width: 380px; height: auto;
+      background: transparent; margin: 0 auto; cursor: pointer;
+      filter: drop-shadow(0 0 8px rgba(139,58,58,0.3));
+    }
+    #currentResult {
+      margin: 10px 0 5px; font-size: 1.8rem; color: #8b3a3a;
+      min-height: 2.5rem; letter-spacing: 2px;
+    }
+    #stepLabel {
+      font-size: 1.3rem; margin: 5px 0; color: #4a5a4a;
+      letter-spacing: 2px;
+    }
+    #summary {
+      background: #e8e0d4; border: 1px solid #c4b8a0; border-radius: 20px;
+      padding: 20px; margin-top: 20px; text-align: left;
+      line-height: 2; font-size: 1.2rem; display: none;
+    }
+    #summary h2 { text-align: center; color: #2c2c2c; margin-bottom: 15px;
+      border-bottom: 1px dashed #c4b8a0; padding-bottom: 8px; }
+    #summary p { margin: 6px 0; border-bottom: 1px dotted #c4b8a0; padding: 4px 0; }
+    #summary strong { color: #8b3a3a; margin-right: 5px; }
+  </style>
+</head>
+<body>
+
+<div id="homePage">
+  <h1>道轨异仙<br>人生体验轮盘</h1>
+  <div class="subtitle">由 DeepSeek Kimi 提供，仅供娱乐</div>
+  <button id="startBtn">开启命盘</button>
+</div>
+
+<div id="gamePage">
+  <a href="#" class="back-arrow" id="backHomeBtn">←</a>
+  <button class="spin-trigger-float" id="spinTriggerBtn" title="旋转转盘">↻</button>
+  <div class="restart-float" id="restartFloat" title="重新开始">↻</div>
+  <div id="app">
+    <h1 class="game-title">🎲 道诡异仙 🎲</h1>
+    <div id="wheelContainer">
+      <canvas id="wheelCanvas" width="400" height="400"></canvas>
+    </div>
+    <div id="currentResult"></div>
+    <div id="stepLabel">转动种族</div>
+    <div id="summary"></div>
+  </div>
+</div>
+<script>
+  (function() {
+    // ========== 调色板 ==========
+    const COLORS = {
+      bg: '#f3efe6',        // 旧道经纸色
+      text: '#2c2c2c',      // 墨灰
+      red: '#8b3a3a',       // 干涸朱砂
+      green: '#4a5a4a',     // 尸绿
+      gold: '#8b7355',      // 锈铜钱色
+      border: '#c4b8a0',    // 旧纸边缘焦黄
+      canvasBg: '#e8e0d4',  // 浅区底色
+      sectorA: '#f3efe6',   // 旧纸白
+      sectorB: '#e4ddd0',   // 茶渍黄
+      sectorC: '#d8d8d0',   // 尸绿微染
+    };
+
+    // ========== 选项数据池 ==========
+    const deathAgeOpts = ['3岁','5岁','10岁','15岁','20岁','25岁','30岁','40岁','50岁','60岁','70岁','80岁','99岁'];
+    const raceOpts = ['人', '半妖', '邪祟', '巫', '鬼'];
+    const genderOpts = ['男','女','阴阳同体'];
+    const appearanceOpts = ['倾国倾城','相貌堂堂','平平无奇','歪瓜裂枣','面目狰狞'];
+
+    const eraOpts = ['大齐盛世', '大齐末年', '大梁初期', '现代'];
+    const birthByEra = {
+      '大齐盛世': ['西京城','正德寺','清风观','北海新港','恒华山'],
+      '大齐末年': ['牛心村','乱坟岗','裂开的土地庙','水底庙宇','酆都'],
+      '大梁初期': ['建邺镇','五里岗','监天司总部','白云观','括苍城'],
+      '现代': ['安定精神病院','第六人民医院','康宁医院','橘子洲','城中村']
+    };
+
+    const rootOpts = ['天灵根','普通灵根','废灵根','无灵根'];
+    function getRootPool(birthplace) {
+      if (birthplace === '清风观' || birthplace === '正德寺') {
+        return ['天灵根','天灵根','普通灵根','废灵根','无灵根'];
+      }
+      if (['安定精神病院','第六人民医院','康宁医院'].includes(birthplace)) {
+        return ['普通灵根','废灵根','无灵根','无灵根'];
+      }
+      return rootOpts;
+    }
+
+    // 幼年遭遇池
+    const encounterPool = {
+      '安定精神病院': ['被误诊','看到幻觉','被绑在病床上','遇到病友'],
+      '第六人民医院': ['被误诊','看到幻觉','电击治疗','结识陈红瑜'],
+      '康宁医院': ['重症观察','遇到吴成','药物过量','梦中穿越'],
+      '清风观': { '天灵根': ['被收为真传','被当作药引','偷学道法'],
+                   '普通灵根': ['洒扫杂役','目睹炼丹','被道士欺负'],
+                   '废灵根': ['被当作药渣','偷偷修炼','逃跑'],
+                   '无灵根': ['被当作苦力','目睹丹阳子炼丹','被关入丹房'] },
+      '正德寺': ['目睹粉色肉山','被和尚收留','偷学佛法','被当作祭品'],
+      '牛心村': ['正常农家','目睹邪祟吃人','被传授基础符箓','遇到游姥爷'],
+      '乱坟岗': ['被鬼附身','捡到铜钱剑','遇到虚年','迷失方向'],
+      '建邺镇': ['市井成长','被江湖人收养','目睹坐忘道行骗','进入镖局'],
+    };
+
+    function getEncounterOptions(birthplace, root) {
+      let pool = encounterPool[birthplace];
+      if (!pool) return ['未知遭遇'];
+      if (Array.isArray(pool)) return pool;
+      if (typeof pool === 'object' && pool[root]) return pool[root];
+      return ['平凡童年'];
+    }
+
+    // 少年抉择池
+    const decisionPool = {
+      '被误诊': ['逃出医院','接受电击治疗','遇到其他心素'],
+      '看到幻觉': ['追寻幻觉','自我了断','被当作精神病加重'],
+      '被当作药引': ['反杀道士','被炼丹','被正一道救下'],
+      '正常农家': ['拜师学艺','科举入仕','继承家业'],
+      '目睹邪祟吃人': ['逃往城市','拜入道门','精神崩溃'],
+      '洒扫杂役': ['偷学道法','逃跑','举报丹阳子'],
+    };
+    function getDecisionOptions(encounter) {
+      return decisionPool[encounter] || ['随波逐流','意外死亡','离开家乡'];
+    }
+
+    // 青年归属池
+    function getFactionPool(decision, root) {
+      if (decision === '拜师学艺' || decision === '拜入道门' || decision === '偷学道法') {
+        if (root === '天灵根' || root === '普通灵根') return ['正一道','白云观','监天司','散修'];
+        if (root === '废灵根') return ['袄景教','坐忘道','邪修'];
+        return ['兵家','山贼'];
+      }
+      if (decision === '逃出医院' || decision === '追寻幻觉') return ['现代心素组织','流浪','再次入院'];
+      if (decision === '反杀道士') return ['坐忘道','袄景教','被追杀'];
+      if (decision === '科举入仕') return ['朝廷'];
+      if (decision === '逃跑' || decision === '离开家乡') return ['散修','山贼','疍民'];
+      return ['散修','朝廷','普通人'];
+    }
+
+    // 功法池（根据根骨、势力、心字辈过滤）
+    const allSkills = ['大千录','心经','正一法箓','无生经','阴阳死书','坐忘心法','血肉飞升诀',
+      '监天密卷','天道感悟','袄景登阶功法','龙气附体','大齐龙脉功法','明轮堂秘典',
+      '中阴庙密法','长生天祭典','说不得戏法','罗教铜钱剑术','白家献祭功',
+      '傩戏傀儡术','山贼刀法','疍民鱼鳞诀','方仙教内丹术','将苑兵法',
+      '兵家啸起狂化','不灭之身','罗教遁地术','仙都兹摄印','五脏定身符箓',
+      '七星铜钱剑法','修元婴','符箓册全解','金桥妙经','不修功法'];
+
+    function getSkillOptions(root, faction, xinzibeiType) {
+      let pool = [...allSkills];
+      // 根骨过滤
+      if (root === '废灵根') pool = pool.filter(s => !['正一法箓','修元婴','符箓册全解','天道感悟'].includes(s));
+      if (root === '无灵根') return ['兵家啸起狂化','山贼刀法','将苑兵法'];
+      // 心素过滤
+      if (xinzibeiType === '心素') return ['大千录','心经','坐忘心法','不修功法'];
+      // 势力过滤
+      if (faction === '监天司') pool = pool.filter(s => !['坐忘心法','血肉飞升诀','大千录'].includes(s));
+      if (faction === '袄景教') return ['血肉飞升诀','大千录','袄景登阶功法'];
+      return pool;
+    }
+
+    const masteryOpts = ['炉火纯青','登堂入室','略有小成','初窥门径','走火入魔'];
+    const xinzibeiAskOpts = ['是','否'];
+    const xinzibeiTypeOpts = ['心素','心蟠','心浊'];
+    const simingOpts = ['季灾','巴虺','三清','无生老母','死亡司命魁櫑','腐烂司命','秘密司命','秩序司命','混乱司命','慈悲司命','恐惧司命','血肉司命','谎言司命','煞气司命','畸变司命'];
+    const tiandaoAskOpts = ['是','否'];
+    const tiandaoOpts = ['迷惘','清醒','秩序','混乱','慈悲','死亡','生长','谎言','真假','煞气','秘密','痛苦','血肉','恐惧','嬗变','畸变'];
+    const freqOpts = ['1年','2年','3年','5年','10年'];
+
+    const specialEventPool = ['遭遇天灾：谎言消失','遭遇天灾：腐烂消失','遭遇天灾：蝗灾','遭遇天灾：地龙翻身',
+      '遭遇游姥爷','被灵孽寄生','遇见上极灌口','被坐忘道欺骗','获得诡物残片',
+      '进入心浊','被炼成丹药','参与斫龙诛仙阵','在现代世界被误诊精神病',
+      '在正德寺看到肉山','在酆都遇见舞狮宫','被白家暗算','与上极灌口交换秘密',
+      '被虚年追赶','获得流珠法眼','学会符箓画法','被厌胜阵法诅咒','修炼方仙教内丹',
+      '获得舍利子心眼通','目睹天道崩裂','吃掉太岁肉','被大齐法教追杀','被疍民收留',
+      '加入山贼团伙','与元家水匪交手','在安慈庵避难'];
+
+    const interactAskOpts = ['是','否'];
+    const friendlyOpts = ['友好交涉','非友好交涉'];
+    const interventionOpts = ['帮助他们找到龙脉','指引上极灌口位置','暗中破坏计划','加入成为伙伴',
+      '成为死敌多次交手','提供关键情报','救过李火旺一命','被李火旺所救','传授符箓知识','一起对抗法教'];
+    const fightPool = ['与李火旺联手对抗福生天','独自挑战福生天','献祭自己封印福生天','被福生天同化',
+      '用天道之力击退','唤醒无生老母协助','启动斫龙诛仙阵','旁观未参与','成为福生天投影'];
+    const deathPool = ['被福生天吞噬','寿元耗尽','被天道反噬','被同伴背叛而死','兵解','与敌人同归于尽',
+      '化为天道的一部分','安然老死','被邪祟所杀','走火入魔爆体','被坐忘道炼成骰子','迷失在心浊空间'];
+
+    // ========== 全局状态 ==========
+    const state = {
+      deathAge: null,
+      race: '', gender: '', appearance: '', era: '', birthplace: '', root: '',
+      encounter: '', decision: '', faction: '', ageLearn: '',
+      skillCount: '', skills: [], mastery: '',
+      isXinzibei: false, xinzibeiType: '', siming: '',
+      isTiandao: false, tiandaoCount: '', tiandaos: [],
+      freq: '', specialEvents: [], specialCount: 0,
+      interactAsk: '', friendly: '', intervention: '',
+      fight: '', death: '',
+      tags: [],
+    };
+
+    const stepQueue = [];
+    let currentStep = null;
+    let currentRotation = 0, spinning = false, animFrame = null;
+    let spinStartTime = 0, spinDuration = 2200, targetRotation = 0, startRotation = 0;
+    let centerRadius = 0;
+    let centerClickCount = 0;
+
+    // 获取画布元素
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const stepLabel = document.getElementById('stepLabel');
+    const currentResultDiv = document.getElementById('currentResult');
+    const summaryDiv = document.getElementById('summary');
+    const spinTriggerBtn = document.getElementById('spinTriggerBtn');
+    // ========== 工具函数 ==========
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const parseNum = str => parseInt(str) || 0;
+
+    // ========== 轮盘绘制 ==========
+    function drawWheel(options, rotation) {
+      const w = canvas.width, h = canvas.height;
+      const cx = w/2, cy = h/2, r = Math.min(w,h) * 0.42;
+      centerRadius = r * 0.18;
+      const step = (2 * Math.PI) / options.length;
+      ctx.clearRect(0,0,w,h);
+
+      // 扇区颜色三循环 A→B→C→A...
+      const sectorColors = [COLORS.sectorA, COLORS.sectorB, COLORS.sectorC];
+      for (let i = 0; i < options.length; i++) {
+        const start = rotation + i * step;
+        const end = start + step;
+        const mid = start + step/2;
+        const color = sectorColors[i % 3];
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, end);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // 文字
+        const tx = cx + Math.cos(mid) * r * 0.68;
+        const ty = cy + Math.sin(mid) * r * 0.68;
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(mid);
+        if (mid > Math.PI/2 && mid < 3*Math.PI/2) ctx.rotate(Math.PI);
+        ctx.font = 'bold 13px "KaiTi", "楷体"';
+        ctx.fillStyle = COLORS.text;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(options[i], 0, 0);
+        ctx.restore();
+      }
+
+      // 指针（时钟型，暗朱砂）
+      const pointerLen = r * 0.55, pointerBase = r * 0.08;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.beginPath();
+      ctx.moveTo(0, -pointerLen);
+      ctx.lineTo(-pointerBase, 0);
+      ctx.lineTo(0, pointerLen * 0.25);
+      ctx.lineTo(pointerBase, 0);
+      ctx.closePath();
+      ctx.fillStyle = COLORS.red;
+      ctx.fill();
+      ctx.strokeStyle = '#5c2525';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 中心圆（墨灰底，铜钱边框）
+      ctx.beginPath();
+      ctx.arc(0, 0, centerRadius, 0, 2*Math.PI);
+      ctx.fillStyle = COLORS.text;
+      ctx.fill();
+      ctx.strokeStyle = COLORS.gold;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 中心文字（旧金色，hover变色在JS中处理，这里静态绘制）
+      ctx.font = `bold ${centerRadius*0.9}px "KaiTi", "楷体"`;
+      ctx.fillStyle = COLORS.border;  // 旧金色
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('旋转', 0, 0);
+      ctx.restore();
+    }
+
+    // ========== 坐标获取（兼容触摸） ==========
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      let clientX, clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    // ========== 中心彩蛋点击 ==========
+    function handleCenterClick(e) {
+      if (spinning) return;
+      if (!currentStep || !currentStep.options || currentStep.options.length === 0) return;
+      const { x, y } = getCanvasCoords(e);
+      const dist = Math.sqrt((x - canvas.width/2) ** 2 + (y - canvas.height/2) ** 2);
+      if (dist <= centerRadius + 5) {
+        centerClickCount++;
+        if (centerClickCount >= 5) {
+          alert('娃，你着相了！\n左下角的“↻”按钮才是真正的旋转哦~');
+          centerClickCount = 0;
+        }
+      }
+    }
+    canvas.addEventListener('click', handleCenterClick);
+    canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      handleCenterClick(e);
+    });
+
+    // ========== 旋转控制 ==========
+    function setSpinEnabled(enable) {
+      if (enable) {
+        spinTriggerBtn.disabled = false;
+        spinTriggerBtn.style.pointerEvents = 'auto';
+      } else {
+        spinTriggerBtn.disabled = true;
+        spinTriggerBtn.style.pointerEvents = 'none';
+      }
+    }
+
+    function triggerSpin() {
+      if (spinning || !currentStep || !currentStep.options.length) return;
+      startSpin();
+    }
+    spinTriggerBtn.addEventListener('click', triggerSpin);
+    spinTriggerBtn.addEventListener('touchend', e => {
+      e.preventDefault();
+      triggerSpin();
+    });
+
+    function startSpin() {
+      if (spinning) return;
+      spinning = true;
+      setSpinEnabled(false);
+      const opts = currentStep.options;
+      const step = (2 * Math.PI) / opts.length;
+      const win = Math.floor(Math.random() * opts.length);
+      targetRotation = currentRotation + (5 + Math.floor(Math.random() * 4)) * 2 * Math.PI
+        + normalizeAngle(-Math.PI/2 - (win * step + step/2) - currentRotation);
+      startRotation = currentRotation;
+      spinStartTime = performance.now();
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animateSpin();
+    }
+
+    function normalizeAngle(a) { return ((a % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI); }
+
+    function animateSpin(ts) {
+      if (!ts) ts = performance.now();
+      const prog = Math.min((ts - spinStartTime) / spinDuration, 1);
+      const ease = 1 - Math.pow(1 - prog, 3);
+      currentRotation = startRotation + (targetRotation - startRotation) * ease;
+      drawWheel(currentStep.options, currentRotation);
+      if (prog < 1) {
+        animFrame = requestAnimationFrame(animateSpin);
+      } else {
+        currentRotation = targetRotation;
+        drawWheel(currentStep.options, currentRotation);
+        const idx = Math.floor(normalizeAngle(-Math.PI/2 - currentRotation) / ((2*Math.PI)/currentStep.options.length)) % currentStep.options.length;
+        const result = currentStep.options[idx];
+        spinning = false;
+        animFrame = null;
+        setSpinEnabled(true);
+        currentResultDiv.textContent = result;
+        handleStepResult(currentStep, result);
+      }
+    }
+
+    // ========== 队列与步骤处理 ==========
+    function prepareOptions(step) {
+      // 动态填充选项
+      if (step.key === 'birthplace') {
+        step.options = birthByEra[state.era] || [];
+      } else if (step.key === 'root') {
+        step.options = getRootPool(state.birthplace);
+      } else if (step.key === 'encounter') {
+        step.options = getEncounterOptions(state.birthplace, state.root);
+      } else if (step.key === 'decision') {
+        step.options = getDecisionOptions(state.encounter);
+      } else if (step.key === 'faction') {
+        step.options = getFactionPool(state.decision, state.root);
+      } else if (step.key === 'ageLearn') {
+        const m = {天灵根:['5岁','8岁'], 普通灵根:['8岁','12岁','16岁'], 废灵根:['20岁','30岁','终生未学'], 无灵根:['终生未学']};
+        step.options = m[state.root] || ['终生未学'];
+      } else if (step.key === 'skillCount') {
+        step.options = (state.root === '废灵根' || state.xinzibeiType === '心素') ? ['1个'] : ['1个','1个','2个','2个','3个'];
+      } else if (step.key === 'skill') {
+        step.options = getSkillOptions(state.root, state.faction, state.xinzibeiType);
+      } else if (step.key === 'specialEvent') {
+        step.options = specialEventPool;
+      }
+    }
+
+    function handleStepResult(step, result) {
+      // 保存结果
+      state[step.key] = result;
+      // 额外处理
+      if (step.key === 'skill') state.skills.push(result);
+      if (step.key === 'specialEvent') state.specialEvents.push(result);
+      if (step.key === 'tiandao') state.tiandaos.push(result);
+
+      // 动态插入后续步骤
+      if (step.key === 'xinzibei') {
+        if (result === '是') {
+          stepQueue.unshift({key:'xinzibeiType', label:'🌀 心字辈类型', options: xinzibeiTypeOpts});
+        } else {
+          stepQueue.unshift({key:'tiandaoAsk', label:'✨ 是否掌握天道', options: tiandaoAskOpts});
+        }
+      }
+      if (step.key === 'xinzibeiType') {
+        state.isXinzibei = true;
+        state.xinzibeiType = result;
+        if (result === '心蟠') {
+          stepQueue.unshift({key:'siming', label:'👁️ 是哪位司命的心蟠', options: simingOpts});
+        }
+        stepQueue.unshift({key:'tiandaoAsk', label:'✨ 是否掌握天道', options: tiandaoAskOpts});
+      }
+      if (step.key === 'tiandaoAsk') {
+        if (result === '是') {
+          stepQueue.unshift({key:'tiandaoCount', label:'🔮 掌握几条天道', options: Array.from({length:16},(_,i)=>`${i+1}条`)});
+        } else {
+          stepQueue.unshift({key:'freq', label:'⏳ 特殊经历频率', options: freqOpts});
+        }
+      }
+      if (step.key === 'tiandaoCount') {
+        const num = parseNum(result);
+        for (let i = num-1; i >= 0; i--) stepQueue.unshift({key:'tiandao', label:`☯️ 天道 (${i+1}/${num})`, options: tiandaoOpts});
+      }
+      if (step.key === 'tiandao' && stepQueue.length === 0) {
+        stepQueue.push({key:'freq', label:'⏳ 特殊经历频率', options: freqOpts});
+      }
+      if (step.key === 'freq') {
+        const freq = parseNum(result);
+        const age = parseNum(state.deathAge || '99');
+        let times = Math.floor(age / freq);
+        times = Math.min(times, 10);
+        state.specialCount = times;
+        for (let i = times-1; i >= 0; i--) stepQueue.unshift({key:'specialEvent', label:`⚡ 特殊经历 (${i+1}/${times})`, options: specialEventPool});
+        if (times === 0) {
+          stepQueue.push({key:'interactAsk', label:'🤝 是否与李火旺交涉', options: interactAskOpts});
+          stepQueue.push({key:'fight', label:'⚔️ 打福生天', options: fightPool});
+          stepQueue.push({key:'death', label:'💀 死亡方式', options: deathPool});
+        }
+      }
+      if (step.key === 'specialEvent') {
+        state.specialCount--;
+        if (state.specialCount === 0) {
+          stepQueue.push({key:'interactAsk', label:'🤝 是否与李火旺交涉', options: interactAskOpts});
+          stepQueue.push({key:'fight', label:'⚔️ 打福生天', options: fightPool});
+          stepQueue.push({key:'death', label:'💀 死亡方式', options: deathPool});
+        }
+      }
+      if (step.key === 'interactAsk' && result === '是') {
+        stepQueue.unshift({key:'intervention', label:'🤝 干预方式', options: interventionOpts});
+        stepQueue.unshift({key:'friendly', label:'⚔️ 交涉性质', options: friendlyOpts});
+      }
+      // 继续下一步
+      setTimeout(() => nextStep(), 1800);
+    }
+
+    function nextStep() {
+      if (stepQueue.length === 0) {
+        showSummary();
+        return;
+      }
+      currentStep = stepQueue.shift();
+      prepareOptions(currentStep);
+      if (!currentStep.options || currentStep.options.length === 0) {
+        nextStep();
+        return;
+      }
+      stepLabel.innerText = currentStep.label;
+      currentResultDiv.textContent = '';
+      drawWheel(currentStep.options, currentRotation);
+      setSpinEnabled(true);
+    }
+    // ========== 死亡年龄计算（因果推算） ==========
+    function computeDeathAge() {
+      let age = 50; // 基础寿命
+      // 根骨影响
+      if (state.root === '天灵根') age += 20;
+      else if (state.root === '普通灵根') age += 10;
+      else if (state.root === '废灵根') age -= 5;
+      else if (state.root === '无灵根') age -= 10;
+      // 心素崩溃倒计时（若心素）
+      if (state.xinzibeiType === '心素') {
+        const awakeAge = parseInt(state.ageLearn) || 15;
+        let fix = 0;
+        if (state.skills.includes('心经')) fix += 20;
+        if (state.skills.includes('大千录')) fix -= 15;
+        if (state.skills.includes('坐忘心法')) fix += 5;
+        age = awakeAge + 40 + fix;
+      }
+      // 心蟠代价
+      if (state.xinzibeiType === '心蟠') {
+        const selectedAge = parseInt(state.ageLearn) || 25;
+        age = selectedAge + 30 - (state.specialEvents.length * 2);
+      }
+      // 功法延寿/减寿
+      if (state.skills.includes('修元婴') || state.skills.includes('符箓册全解')) age += 20;
+      if (state.skills.includes('血肉飞升诀') || state.skills.includes('坐忘心法')) age -= 10;
+      // 重伤事件
+      const heavyInjuries = state.specialEvents.filter(e => e.includes('重伤') || e.includes('被追杀') || e.includes('登阶失败')).length;
+      age -= heavyInjuries * 5;
+      // 下限
+      if (age < 10) age = 10;
+      return age + '岁';
+    }
+
+    // ========== 命格总结 ==========
+    function showSummary() {
+      // 计算最终死亡年龄
+      state.deathAge = computeDeathAge();
+
+      setSpinEnabled(false);
+      summaryDiv.style.display = 'block';
+      stepLabel.innerText = '命格已定，诡异难逃';
+      currentResultDiv.textContent = '';
+
+      let html = '<h2>🕯️ 你的道诡异仙命格 🕯️</h2>';
+      html += `<p><strong>种族：</strong>${state.race || '?'}</p>`;
+      html += `<p><strong>性别：</strong>${state.gender || '?'}</p>`;
+      html += `<p><strong>颜值：</strong>${state.appearance || '?'}</p>`;
+      html += `<p><strong>出生时代：</strong>${state.era || '?'}</p>`;
+      html += `<p><strong>出生地点：</strong>${state.birthplace || '?'}</p>`;
+      html += `<p><strong>幼年根骨：</strong>${state.root || '?'}</p>`;
+      html += `<p><strong>幼年遭遇：</strong>${state.encounter || '?'}</p>`;
+      html += `<p><strong>少年抉择：</strong>${state.decision || '?'}</p>`;
+      html += `<p><strong>青年归属：</strong>${state.faction || '?'}</p>`;
+      html += `<p><strong>学法术年龄：</strong>${state.ageLearn || '?'}</p>`;
+      if (state.skillCount) html += `<p><strong>功法数量：</strong>${state.skillCount}</p>`;
+      if (state.skills.length) html += `<p><strong>所修功法：</strong>${state.skills.join('、')}</p>`;
+      html += `<p><strong>功法运用程度：</strong>${state.mastery || '?'}</p>`;
+      html += `<p><strong>是否为心字辈：</strong>${state.isXinzibei ? '是' : '否'}</p>`;
+      if (state.isXinzibei) {
+        html += `<p><strong>心字辈类型：</strong>${state.xinzibeiType}</p>`;
+        if (state.xinzibeiType === '心蟠') html += `<p><strong>所属司命：</strong>${state.siming}</p>`;
+      }
+      html += `<p><strong>是否掌握天道：</strong>${state.isTiandao ? '是' : '否'}</p>`;
+      if (state.isTiandao) {
+        html += `<p><strong>天道数量：</strong>${state.tiandaoCount}</p>`;
+        if (state.tiandaos.length) html += `<p><strong>具体天道：</strong>${state.tiandaos.join('、')}</p>`;
+      }
+      html += `<p><strong>特殊经历频率：</strong>${state.freq || '无'}</p>`;
+      if (state.specialEvents.length) html += `<p><strong>特殊经历：</strong>${state.specialEvents.join('、')}</p>`;
+      html += `<p><strong>与李火旺交涉：</strong>${state.interactAsk || '?'}</p>`;
+      if (state.interactAsk === '是') {
+        html += `<p><strong>交涉性质：</strong>${state.friendly}</p>`;
+        html += `<p><strong>干预方式：</strong>${state.intervention}</p>`;
+      }
+      html += `<p><strong>打福生天所为：</strong>${state.fight || '?'}</p>`;
+      html += `<p><strong>死亡方式：</strong>${state.death || '?'}</p>`;
+      html += `<p style="font-size:1.4rem;color:${COLORS.red};text-align:center;border:none;"><strong>享年：${state.deathAge}</strong></p>`;
+      summaryDiv.innerHTML = html;
+    }
+
+    // ========== 初始步骤队列构建 ==========
+    function initGame() {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      spinning = false;
+      currentRotation = 0;
+      centerClickCount = 0;
+
+      // 重置状态
+      Object.assign(state, {
+        deathAge: null, race: '', gender: '', appearance: '', era: '', birthplace: '', root: '',
+        encounter: '', decision: '', faction: '', ageLearn: '',
+        skillCount: '', skills: [], mastery: '',
+        isXinzibei: false, xinzibeiType: '', siming: '',
+        isTiandao: false, tiandaoCount: '', tiandaos: [],
+        freq: '', specialEvents: [], specialCount: 0,
+        interactAsk: '', friendly: '', intervention: '',
+        fight: '', death: '',
+        tags: [],
+      });
+
+      // 构建步骤序列（种族→时代→地点→根骨→幼年遭遇→少年抉择→青年归属→学法年龄→心字辈→（分支））
+      stepQueue.length = 0;
+      stepQueue.push(
+        { key: 'race', label: '🧬 种族', options: raceOpts },
+        { key: 'gender', label: '⚤ 性别', options: genderOpts },
+        { key: 'appearance', label: '✨ 颜值', options: appearanceOpts },
+        { key: 'era', label: '📅 出生时代', options: eraOpts },
+        { key: 'birthplace', label: '🏠 出生地点', options: [] },
+        { key: 'root', label: '🌱 幼年根骨', options: [] },
+        { key: 'encounter', label: '🌀 幼年遭遇 (0-10岁)', options: [] },
+        { key: 'decision', label: '⚡ 少年抉择 (10-20岁)', options: [] },
+        { key: 'faction', label: '⚔️ 青年归属 (20-30岁)', options: [] },
+        { key: 'ageLearn', label: '🎂 学法术年龄', options: [] },
+        { key: 'xinzibei', label: '❤️ 是否为心字辈', options: xinzibeiAskOpts },
+        // 后续分支在 handleStepResult 中动态插入
+      );
+
+      summaryDiv.style.display = 'none';
+      summaryDiv.innerHTML = '';
+      currentStep = null;
+      nextStep();
+    }
+
+    // ========== 页面切换与按钮事件 ==========
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('homePage').style.display = 'none';
+      document.getElementById('gamePage').style.display = 'block';
+      initGame();
+    });
+
+    document.getElementById('backHomeBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('homePage').style.display = 'flex';
+      document.getElementById('gamePage').style.display = 'none';
+      if (animFrame) cancelAnimationFrame(animFrame);
+      spinning = false;
+    });
+
+    document.getElementById('restartFloat').addEventListener('click', initGame);
+
+    // ========== 启动（仅加载后不自动开始） ==========
+  })();
+</script>
+</body>
+</html>
